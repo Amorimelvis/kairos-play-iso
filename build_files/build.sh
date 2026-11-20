@@ -72,8 +72,16 @@ grep -q 'Theme=kairos-play' /etc/plymouth/plymouthd.conf
 KVER="$(ls /usr/lib/modules | sort -V | tail -n1)"
 echo "kernel: $KVER"
 export DRACUT_NO_XATTR=1
+# /root aponta para /var/roothome, que não existe no build: sem isto o dracut reclama.
+mkdir -p /var/roothome
 dracut --no-hostonly --kver "$KVER" --reproducible --add ostree --add plymouth -f "/usr/lib/modules/$KVER/initramfs.img"
 chmod 0600 "/usr/lib/modules/$KVER/initramfs.img"
+# Confere que a abertura Kairos entrou no initramfs (senão o boot mostraria a da Bazzite).
+lsinitrd "/usr/lib/modules/$KVER/initramfs.img" > /tmp/lsinitrd.txt
+grep -q "plymouth/themes/kairos-play/kairos-play.script" /tmp/lsinitrd.txt \
+  || { echo "ERRO: tema kairos-play fora do initramfs" >&2; exit 1; }
+echo "initramfs com o tema kairos-play: ok"
+rmdir /var/roothome 2>/dev/null || true
 # Garante "splash" na linha do kernel (sem duplicar o que o Bazzite já põe)
 if ! cat /usr/lib/bootc/kargs.d/*.toml 2>/dev/null | grep -q '"splash"'; then
   mkdir -p /usr/lib/bootc/kargs.d
@@ -116,5 +124,17 @@ echo "== 7. Identidade =="
 sed -i 's/^VARIANT=.*/VARIANT="Kairos Play"/' /usr/lib/os-release || true
 grep -q '^VARIANT=' /usr/lib/os-release || echo 'VARIANT="Kairos Play"' >> /usr/lib/os-release
 echo "Kairos Play OS (kit $(cat "$DEST/VERSAO-KIT"))" > "$DEST/IMAGEM"
+
+echo "== 8. Repositórios em /etc/yum.repos.d (para o gerador da ISO) =="
+# Fedora 45 mudou os .repo para /usr/share/dnf5/repos.d; o bootc-image-builder
+# (anaconda-iso) ainda só lê /etc/yum.repos.d e falha com "missing packages".
+# https://github.com/osbuild/image-builder/issues/2704
+mkdir -p /etc/yum.repos.d
+for r in /usr/share/dnf5/repos.d/*.repo; do
+  [ -f "$r" ] || continue
+  [ -e "/etc/yum.repos.d/$(basename "$r")" ] || cp -v "$r" /etc/yum.repos.d/
+done
+ls -la /etc/yum.repos.d
+rm -rf /var/lib/dnf/repos /run/dnf 2>/dev/null || true
 
 echo "== pronto =="
