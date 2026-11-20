@@ -1,0 +1,18 @@
+[Unit]
+Description=Kairos Play - preparação do primeiro boot (usuário, apps, login automático)
+# Roda antes da tela de login: no próximo passo já entra direto no Kairos Play.
+Wants=network-online.target
+After=network-online.target systemd-user-sessions.service flatpak-system-helper.service
+Before=display-manager.service plasmalogin.service sddm.service
+ConditionPathExists=!/var/lib/kairos-play/primeiro-boot-ok
+
+[Service]
+Type=oneshot
+ExecStart=/usr/libexec/kairos-play/primeiro-boot.sh
+RemainAfterExit=yes
+# RetroDECK é grande; sem internet o script desiste rápido e tenta de novo no próximo boot.
+TimeoutStartSec=40min
+StandardOutput=journal+console
+
+[Install]
+WantedBy=multi-user.target

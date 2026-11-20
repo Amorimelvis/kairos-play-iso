@@ -1,0 +1,8 @@
+[Unit]
+Description=Kairos Play - preparação depois da criação do usuário
+ConditionPathExists=!/var/lib/kairos-play/primeiro-boot-ok
+
+[Service]
+Type=oneshot
+ExecStart=/usr/libexec/kairos-play/primeiro-boot.sh --depois-do-login
+TimeoutStartSec=40min

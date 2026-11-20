@@ -1,0 +1,8 @@
+.env
+*.env
+*.iso
+*.qcow2
+output/
+__pycache__/
+*.pyc
+bios/

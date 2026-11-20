@@ -1,0 +1,2 @@
+# Kairos Play: o usuário logado pode criar o mouse virtual do controle.
+KERNEL=="uinput", SUBSYSTEM=="misc", TAG+="uaccess", OPTIONS+="static_node=uinput"

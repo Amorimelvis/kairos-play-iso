@@ -1,0 +1,42 @@
+# Instalador (Anaconda) do Kairos Play OS. Feito com bootc-image-builder (tipo anaconda-iso).
+# A pessoa escolhe o disco, o Wi-Fi e cria o usuário; o resto é automático.
+
+[customizations.installer.kickstart]
+contents = """
+%post --log=/root/kairos-play-post.log
+set -x
+# Atualizações futuras do sistema vêm da imagem Kairos Play no GitHub.
+bootc switch --mutate-in-place --transport registry ghcr.io/amorimelvis/kairos-play-iso:latest || true
+
+# Chave de Secure Boot do Universal Blue/Bazzite (senha pública: universalblue).
+# No 1º reinício aparece a tela azul "MOK": Enroll MOK > Continue > Yes > universalblue > Reboot.
+if [ -f /etc/pki/akmods/certs/akmods-ublue.der ] && command -v mokutil >/dev/null; then
+  mokutil --timeout -1 || true
+  printf 'universalblue\\nuniversalblue\\n' | mokutil --import /etc/pki/akmods/certs/akmods-ublue.der || true
+fi
+
+# Apps do Kairos Play (RetroDECK etc.). Se não houver internet agora, o primeiro boot instala.
+if [ -f /usr/share/kairos-play/flatpaks.txt ]; then
+  flatpak remote-add --system --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo || true
+  for app in $(grep -vE '^[[:space:]]*(#|$)' /usr/share/kairos-play/flatpaks.txt); do
+    timeout 30m flatpak install --system -y --noninteractive flathub "$app" || true
+  done
+fi
+true
+%end
+"""
+
+[customizations.installer.modules]
+enable = [
+  "org.fedoraproject.Anaconda.Modules.Storage",
+  "org.fedoraproject.Anaconda.Modules.Runtime",
+  "org.fedoraproject.Anaconda.Modules.Network",
+  "org.fedoraproject.Anaconda.Modules.Security",
+  "org.fedoraproject.Anaconda.Modules.Services",
+  "org.fedoraproject.Anaconda.Modules.Users",
+  "org.fedoraproject.Anaconda.Modules.Timezone",
+  "org.fedoraproject.Anaconda.Modules.Localization"
+]
+disable = [
+  "org.fedoraproject.Anaconda.Modules.Subscription"
+]

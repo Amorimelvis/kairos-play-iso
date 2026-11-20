@@ -1,0 +1,68 @@
+---
+name: ISO Kairos Play OS
+on:
+  workflow_dispatch:
+  workflow_run:
+    workflows: ["Imagem Kairos Play OS"]
+    types: [completed]
+    branches: [main]
+
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: true
+
+jobs:
+  iso:
+    name: Gerar o instalador (ISO)
+    if: github.event_name == 'workflow_dispatch' || (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event != 'schedule')
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      packages: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Mais espaço em disco
+        uses: ublue-os/remove-unwanted-software@v9
+        with:
+          remove-codeql: true
+
+      - name: Preparar
+        run: |
+          echo "IMAGE=ghcr.io/${GITHUB_REPOSITORY_OWNER,,}/kairos-play-iso:latest" >> "$GITHUB_ENV"
+          echo "${{ secrets.GITHUB_TOKEN }}" | sudo podman login ghcr.io -u "${{ github.actor }}" --password-stdin
+          df -h
+
+      - name: Gerar ISO (bootc-image-builder)
+        id: build
+        uses: osbuild/bootc-image-builder-action@main
+        with:
+          builder-image: quay.io/centos-bootc/bootc-image-builder:latest
+          config-file: ./disk_config/iso.toml
+          image: ${{ env.IMAGE }}
+          types: anaconda-iso
+          additional-args: --use-librepo=True
+
+      - name: Nome e sha256
+        id: info
+        run: |
+          set -euxo pipefail
+          out="${{ steps.build.outputs.output-directory }}"
+          iso="$(find "$out" -name '*.iso' | head -n1)"
+          novo="$out/kairos-play-os-$(date +%Y%m%d).iso"
+          sudo mv "$iso" "$novo"
+          sudo chown "$(id -u):$(id -g)" "$novo"
+          ( cd "$out" && sha256sum "$(basename "$novo")" > "$(basename "$novo").sha256" )
+          ls -la "$out"; cat "$out"/*.sha256
+          echo "dir=$out" >> "$GITHUB_OUTPUT"
+
+      - name: Guardar a ISO (artefato)
+        uses: actions/upload-artifact@v4
+        with:
+          name: kairos-play-os-iso
+          path: |
+            ${{ steps.info.outputs.dir }}/*.iso
+            ${{ steps.info.outputs.dir }}/*.sha256
+          if-no-files-found: error
+          retention-days: 14
+          compression-level: 0

@@ -1,0 +1,7 @@
+# Apps do Kairos Play (Flathub). Instalados durante a instalação (kickstart) e,
+# se faltar algum (sem internet na hora), no primeiro boot com internet.
+net.retrodeck.retrodeck
+com.google.Chrome
+rocks.shy.VacuumTube
+io.mpv.Mpv
+tv.kodi.Kodi

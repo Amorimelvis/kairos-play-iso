@@ -1,0 +1,10 @@
+[Unit]
+Description=Kairos Play - refaz a preparação quando o primeiro usuário for criado
+ConditionPathExists=!/var/lib/kairos-play/primeiro-boot-ok
+
+[Path]
+PathChanged=/etc/passwd
+Unit=kairos-play-primeiro-boot-usuario.service
+
+[Install]
+WantedBy=multi-user.target
