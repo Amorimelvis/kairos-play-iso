@@ -7,15 +7,14 @@ on:
     types: [completed]
     branches: [main]
 
-concurrency:
-  group: ${{ github.workflow }}
-  cancel-in-progress: true
-
 jobs:
   iso:
     name: Gerar o instalador (ISO)
     if: github.event_name == 'workflow_dispatch' || (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event != 'schedule')
     runs-on: ubuntu-24.04
+    concurrency:
+      group: iso-kairos-play
+      cancel-in-progress: true
     permissions:
       contents: read
       packages: read
