@@ -3,7 +3,7 @@ name: Imagem Kairos Play OS
 on:
   push:
     branches: [main]
-    paths-ignore: ['**/*.md']
+    paths-ignore: ['**/*.md', '.github/workflows/build-iso.yml']
   schedule:
     - cron: '20 9 * * *'   # todo dia: pega Bazzite + último kit Kairos Play
   workflow_dispatch:

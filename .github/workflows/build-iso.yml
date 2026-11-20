@@ -50,8 +50,8 @@ jobs:
           out="${{ steps.build.outputs.output-directory }}"
           iso="$(find "$out" -name '*.iso' | head -n1)"
           novo="$out/kairos-play-os-$(date +%Y%m%d).iso"
-          sudo mv "$iso" "$novo"
-          sudo chown "$(id -u):$(id -g)" "$novo"
+          sudo chown -R "$(id -u):$(id -g)" "$out"
+          mv "$iso" "$novo"
           ( cd "$out" && sha256sum "$(basename "$novo")" > "$(basename "$novo").sha256" )
           ls -la "$out"; cat "$out"/*.sha256
           echo "dir=$out" >> "$GITHUB_OUTPUT"
